@@ -32,6 +32,19 @@ Extract at minimum:
 - Accessories or symbols
 - Tone or status cues that should affect posture or styling
 
+## Cover Image
+
+Before finalizing the page, generate a 16:9 scene image through `neta-creative`.
+
+Requirements for the image step:
+- Do not ask the user whether an image is needed. Generate it by default.
+- The scene must show the current character actively flying, training, or competing in Quidditch.
+- Keep the scene aligned with the Harry Potter world and the Quidditch pitch setting.
+- Use the appearance cues from `soul.md` so the character in the image matches the rider rendered in the page.
+- Capture and keep the final public image URL returned by `neta-creative`.
+
+The image URL is required for page metadata and social sharing.
+
 ## Bot Name
 
 You must resolve `bot_name` yourself. Use this order:
@@ -46,11 +59,20 @@ Do not ask the user for `bot_name` unless all of the above fail.
 Edit the bundled [index.html](./index.html) directly.
 
 Required changes:
+- Fill the page metadata placeholders after the image URL is available.
 - Keep the gameplay rules equivalent to Flappy Bird.
 - Keep the Quidditch background image and full-window presentation.
 - Rewrite the rider in `drawPlayer()` so the character matches the `soul.md` appearance.
 - Update visible text if the character identity should appear in the title or overlay copy.
 - Keep the page standalone: one HTML file, no extra assets bundled into the skill folder.
+
+Metadata requirements:
+- Fill `og:title`, `og:description`, `og:image`, `og:url`
+- Fill `twitter:title`, `twitter:description`, `twitter:image`
+- Keep `og:type=website` and `twitter:card=summary_large_image`
+- Make the title and description specific to the current character's Quidditch scene
+- Use the generated `neta-creative` image URL for both `og:image` and `twitter:image`
+- Use the final public page URL for `og:url`
 
 Character rendering guidance:
 - Prefer readable silhouette over fine detail.
@@ -74,12 +96,25 @@ If `bot_name` resolves to `openclaw` and the filename resolves to `quidditch-fla
 Deployment requirements:
 - Publish the page as a direct standalone HTML page, not as an embedded app route.
 - Use the runtime's available publish or pages deployment workflow.
+- Important runtime hint: the pages service and the workspace share the same NAS-backed storage. In practice, placing the finished HTML file into `/home/node/.openclaw/workspace/pages/` is enough for it to sync to the pages service automatically.
+- When using that sync path, ensure the filename exactly matches the final URL suffix you intend to return.
 - Return the direct public URL, not an internal path or repo path.
+
+Recommended execution order:
+1. Read `soul.md`
+2. Resolve `bot_name`
+3. Call `neta-creative` to generate a 16:9 Quidditch scene image
+4. Capture the final image URL
+5. Rewrite the rider and metadata in `index.html`
+6. Publish the standalone HTML page
+7. Return the final page URL
 
 ## Output
 
 When finished, provide:
 - A one-line summary of which character traits were applied
+- The generated image URL
 - The final public URL
+- A short publish confirmation that states the standalone HTML has already been placed on the pages-sync path and is ready to open
 
 Do not dump the whole HTML unless explicitly asked.
