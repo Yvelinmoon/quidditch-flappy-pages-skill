@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quidditch Flappy</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg-top: #0c1830;
+        --bg-bottom: #050915;
+        --gold: #d7b564;
+        --gold-soft: rgba(215, 181, 100, 0.24);
+        --ink: #f7f1dd;
+        --panel: rgba(10, 15, 29, 0.72);
+        --panel-border: rgba(255, 236, 179, 0.16);
+        --shadow: rgba(0, 0, 0, 0.42);
+        --accent: #af2d2b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        background:
+          radial-gradient(circle at top, rgba(48, 74, 128, 0.32), transparent 38%),
+          linear-gradient(180deg, var(--bg-top), var(--bg-bottom) 72%);
+        color: var(--ink);
+        overflow: hidden;
+      }
+
+      .app-shell {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .hud {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 3;
+        width: 100%;
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 20px 24px 0;
+        pointer-events: none;
+      }
+
+      .brand h1,
+      .brand .eyebrow {
+        margin: 0;
+      }
+
+      .eyebrow {
+        font-family: Georgia, "Times New Roman", serif;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: rgba(247, 241, 221, 0.72);
+        font-size: 0.74rem;
+      }
+
+      .brand h1 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(2rem, 5vw, 3.8rem);
+        line-height: 0.95;
+        color: #f7e6a7;
+        text-shadow: 0 6px 18px rgba(0, 0, 0, 0.34);
+      }
+
+      .scoreboard {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .score-card {
+        min-width: 128px;
+        padding: 14px 16px;
+        border: 1px solid var(--panel-border);
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(19, 26, 43, 0.88), rgba(7, 9, 17, 0.88));
+        box-shadow: 0 12px 30px var(--shadow);
+        backdrop-filter: blur(16px);
+        pointer-events: auto;
+      }
+
+      .score-card span {
+        display: block;
+        font-size: 0.78rem;
+        color: rgba(247, 241, 221, 0.74);
+      }
+
+      .score-card strong {
+        display: block;
+        margin-top: 6px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 2rem;
+        color: #fff2bb;
+      }
+
+      .game-frame {
+        position: absolute;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+        border: 0;
+        box-shadow: none;
+        background: linear-gradient(180deg, #1f4f9e 0%, #6bbed2 38%, #91c48c 75%, #537e4c 100%);
+      }
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: linear-gradient(180deg, rgba(4, 9, 22, 0.18), rgba(4, 9, 22, 0.58));
+        border-radius: 0;
+        transition: opacity 180ms ease;
+        z-index: 2;
+      }
+
+      .overlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .panel {
+        width: min(100%, 420px);
+        padding: 22px 20px;
+        border-radius: 22px;
+        border: 1px solid var(--panel-border);
+        background:
+          linear-gradient(180deg, rgba(20, 29, 50, 0.92), rgba(9, 13, 22, 0.92)),
+          var(--panel);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        text-align: center;
+      }
+
+      .panel-kicker {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        color: #ffe4a3;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+      }
+
+      .panel h2 {
+        margin: 10px 0 12px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 1.8rem;
+        line-height: 1.05;
+      }
+
+      .panel p {
+        margin: 0;
+        color: rgba(247, 241, 221, 0.82);
+        font-size: 0.96rem;
+      }
+
+      .controls {
+        margin-top: 18px;
+        display: grid;
+        gap: 8px;
+        justify-items: center;
+        padding: 12px;
+        border-radius: 16px;
+        background: rgba(255, 236, 179, 0.07);
+      }
+
+      .controls span:first-child {
+        color: #fff0b4;
+        font-weight: 700;
+      }
+
+      @media (max-width: 700px) {
+        .hud {
+          flex-direction: column;
+          align-items: stretch;
+          padding: 16px 16px 0;
+        }
+
+        .scoreboard {
+          justify-content: stretch;
+        }
+
+        .score-card {
+          flex: 1 1 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hud">
+        <div class="brand">
+          <p class="eyebrow">Hogwarts Aerial Trial</p>
+          <h1>Quidditch Flappy</h1>
+        </div>
+        <div class="scoreboard">
+          <div class="score-card">
+            <span>Score</span>
+            <strong id="score">0</strong>
+          </div>
+          <div class="score-card">
+            <span>Best</span>
+            <strong id="best-score">0</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="game-frame">
+        <canvas
+          id="game"
+          width="960"
+          height="540"
+          aria-label="Quidditch Flappy game canvas"
+        ></canvas>
+        <div class="overlay" id="overlay">
+          <div class="panel">
+            <p class="panel-kicker" id="panel-kicker">Training Session</p>
+            <h2 id="panel-title">Click Or Press Space To Fly</h2>
+            <p id="panel-text">
+              Ride your broom through hoops, towers, and enchanted obstacles. One hit ends the run.
+            </p>
+            <div class="controls">
+              <span>Click / Space / Up Arrow</span>
+              <span>Boost upward</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script>
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+
+      const scoreEl = document.getElementById("score");
+      const bestScoreEl = document.getElementById("best-score");
+      const overlayEl = document.getElementById("overlay");
+      const panelKickerEl = document.getElementById("panel-kicker");
+      const panelTitleEl = document.getElementById("panel-title");
+      const panelTextEl = document.getElementById("panel-text");
+
+      const BG_IMAGE_URL = "https://oss.talesofai.cn/picture/6fe6bfba-6fa2-485d-93f6-d454b8a276c4.webp";
+      // Skill template note:
+      // When this page is used through the quidditch-flappy-pages skill,
+      // update drawPlayer() using the active character traits read from soul.md.
+      const WIDTH = canvas.width;
+      const HEIGHT = canvas.height;
+      const GROUND_Y = HEIGHT - 84;
+      const STORAGE_KEY = "quidditch-flappy-best-score";
+      const backgroundImage = new Image();
+
+      backgroundImage.src = BG_IMAGE_URL;
+
+      const state = {
+        phase: "ready",
+        score: 0,
+        bestScore: Number(localStorage.getItem(STORAGE_KEY) || 0),
+        lastTime: 0,
+        spawnTimer: 0,
+        speed: 182,
+        player: {
+          x: 220,
+          y: HEIGHT * 0.48,
+          width: 76,
+          height: 34,
+          velocity: 0,
+          rotation: -0.08,
+        },
+        pipes: [],
+        particles: [],
+        stars: createStars(),
+      };
+
+      bestScoreEl.textContent = String(state.bestScore);
+
+      function createStars() {
+        return Array.from({ length: 48 }, () => ({
+          x: Math.random() * WIDTH,
+          y: Math.random() * HEIGHT * 0.45,
+          r: Math.random() * 1.8 + 0.3,
+          alpha: Math.random() * 0.6 + 0.2,
+        }));
+      }
+
+      function resetGame() {
+        state.phase = "ready";
+        state.score = 0;
+        state.spawnTimer = 0;
+        state.speed = 182;
+        state.pipes = [];
+        state.particles = [];
+        state.player.y = HEIGHT * 0.48;
+        state.player.velocity = 0;
+        state.player.rotation = -0.08;
+        scoreEl.textContent = "0";
+        setOverlay(
+          false,
+          "Training Session",
+          "Click Or Press Space To Fly",
+          "Fly through hoops, tower stacks, and enchanted barriers. Any collision ends the run."
+        );
+      }
+
+      function startGame() {
+        if (state.phase === "running") {
+          flap();
+          return;
+        }
+
+        resetGame();
+        state.phase = "running";
+        flap();
+        overlayEl.classList.add("hidden");
+      }
+
+      function gameOver() {
+        state.phase = "over";
+        if (state.score > state.bestScore) {
+          state.bestScore = state.score;
+          localStorage.setItem(STORAGE_KEY, String(state.bestScore));
+          bestScoreEl.textContent = String(state.bestScore);
+        }
+
+        setOverlay(
+          true,
+          "Run Over",
+          "Score " + state.score,
+          "Click, press Space, or hit Up Arrow to restart and fly the course again."
+        );
+      }
+
+      function setOverlay(show, kicker, title, text) {
+        panelKickerEl.textContent = kicker;
+        panelTitleEl.textContent = title;
+        panelTextEl.textContent = text;
+        overlayEl.classList.toggle("hidden", !show);
+      }
+
+      function flap() {
+        state.player.velocity = -325;
+        spawnBurst(state.player.x + 8, state.player.y + 10);
+      }
+
+      function spawnBurst(x, y) {
+        for (let i = 0; i < 10; i += 1) {
+          state.particles.push({
+            x,
+            y,
+            vx: -Math.random() * 90 - 10,
+            vy: (Math.random() - 0.5) * 50,
+            life: Math.random() * 0.4 + 0.3,
+            maxLife: 0.7,
+            size: Math.random() * 4 + 2,
+            hue: Math.random() > 0.45 ? 42 : 15,
+          });
+        }
+      }
+
+      function spawnPipe() {
+        const baseGap = 168;
+        const gap = Math.max(132, baseGap - Math.min(34, state.score * 1.6));
+        const center = randomBetween(140, GROUND_Y - 120);
+        const width = 102;
+        const theme = chooseObstacle();
+
+        state.pipes.push({
+          x: WIDTH + width,
+          width,
+          gapTop: center - gap / 2,
+          gapBottom: center + gap / 2,
+          scored: false,
+          theme,
+        });
+      }
+
+      function chooseObstacle() {
+        const variants = [
+          { name: "tower", color: "#7b5e42", accent: "#baa58c" },
+          { name: "rings", color: "#9c7835", accent: "#f3dc8d" },
+          { name: "forest", color: "#304e2c", accent: "#53754f" },
+        ];
+        return variants[Math.floor(Math.random() * variants.length)];
+      }
+
+      function randomBetween(min, max) {
+        return min + Math.random() * (max - min);
+      }
+
+      function update(dt) {
+        updateParticles(dt);
+
+        if (state.phase !== "running") {
+          state.player.y += Math.sin(performance.now() / 240) * 0.16;
+          return;
+        }
+
+        state.spawnTimer += dt;
+        state.speed += dt * 1.1;
+
+        if (state.spawnTimer >= 1.62) {
+          state.spawnTimer = 0;
+          spawnPipe();
+        }
+
+        state.player.velocity += 940 * dt;
+        state.player.y += state.player.velocity * dt;
+        state.player.rotation = Math.max(-0.42, Math.min(1.18, state.player.velocity / 420));
+
+        for (const pipe of state.pipes) {
+          pipe.x -= state.speed * dt;
+
+          if (!pipe.scored && pipe.x + pipe.width < state.player.x) {
+            pipe.scored = true;
+            state.score += 1;
+            scoreEl.textContent = String(state.score);
+          }
+        }
+
+        state.pipes = state.pipes.filter((pipe) => pipe.x + pipe.width > -30);
+
+        if (checkCollision()) {
+          gameOver();
+        }
+      }
+
+      function updateParticles(dt) {
+        for (const particle of state.particles) {
+          particle.life -= dt;
+          particle.x += particle.vx * dt;
+          particle.y += particle.vy * dt;
+          particle.vx *= 0.98;
+          particle.vy *= 0.98;
+        }
+
+        state.particles = state.particles.filter((particle) => particle.life > 0);
+      }
+
+      function checkCollision() {
+        const hitbox = {
+          x: state.player.x - 22,
+          y: state.player.y - 12,
+          width: 64,
+          height: 24,
+        };
+
+        if (hitbox.y <= 18 || hitbox.y + hitbox.height >= GROUND_Y - 6) {
+          return true;
+        }
+
+        return state.pipes.some((pipe) => {
+          const overlapsX = hitbox.x + hitbox.width > pipe.x && hitbox.x < pipe.x + pipe.width;
+          const hitsTop = hitbox.y < pipe.gapTop;
+          const hitsBottom = hitbox.y + hitbox.height > pipe.gapBottom;
+          return overlapsX && (hitsTop || hitsBottom);
+        });
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        drawBackground();
+        drawPipes();
+        drawGround();
+        drawParticles();
+        drawPlayer();
+        drawScoreInCanvas();
+      }
+
+      function drawBackground() {
+        ctx.fillStyle = "#10213b";
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+        if (backgroundImage.complete && backgroundImage.naturalWidth > 0) {
+          const scale = Math.max(WIDTH / backgroundImage.naturalWidth, HEIGHT / backgroundImage.naturalHeight);
+          const drawWidth = backgroundImage.naturalWidth * scale;
+          const drawHeight = backgroundImage.naturalHeight * scale;
+          const drawX = (WIDTH - drawWidth) / 2;
+          const drawY = (HEIGHT - drawHeight) / 2;
+          ctx.drawImage(backgroundImage, drawX, drawY, drawWidth, drawHeight);
+        }
+
+        const haze = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+        haze.addColorStop(0, "rgba(6, 13, 28, 0.18)");
+        haze.addColorStop(0.45, "rgba(8, 16, 30, 0.08)");
+        haze.addColorStop(1, "rgba(4, 10, 20, 0.34)");
+        ctx.fillStyle = haze;
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      }
+
+      function drawPipes() {
+        for (const pipe of state.pipes) {
+          drawObstacle(pipe, 0, pipe.gapTop, true);
+          drawObstacle(pipe, pipe.gapBottom, GROUND_Y - pipe.gapBottom, false);
+        }
+      }
+
+      function drawObstacle(pipe, y, height, isTop) {
+        ctx.save();
+        ctx.translate(pipe.x, y);
+
+        if (pipe.theme.name === "tower") {
+          drawTowerObstacle(pipe.width, height, pipe.theme, isTop);
+        } else if (pipe.theme.name === "rings") {
+          drawRingObstacle(pipe.width, height, pipe.theme, isTop);
+        } else {
+          drawForestObstacle(pipe.width, height, pipe.theme, isTop);
+        }
+
+        ctx.restore();
+      }
+
+      function drawTowerObstacle(width, height, theme, isTop) {
+        ctx.fillStyle = theme.color;
+        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = theme.accent;
+        const capY = isTop ? height - 18 : 0;
+        ctx.fillRect(-8, capY, width + 16, 18);
+        ctx.fillStyle = "rgba(255,255,255,0.08)";
+        for (let i = 0; i < 3; i += 1) {
+          ctx.fillRect(12 + i * 24, 14, 10, Math.max(18, height - 32));
+        }
+      }
+
+      function drawRingObstacle(width, height, theme, isTop) {
+        ctx.fillStyle = "#5e4a24";
+        ctx.fillRect(width * 0.38, 0, width * 0.24, height);
+        ctx.strokeStyle = theme.accent;
+        ctx.lineWidth = 8;
+        const positions = isTop ? [height - 44, height - 108] : [44, 108];
+        positions.forEach((py, index) => {
+          if (py > 24 && py < height - 24) {
+            ctx.beginPath();
+            ctx.arc(width / 2 + (index % 2 ? 8 : -8), py, 24 - index * 5, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        });
+      }
+
+      function drawForestObstacle(width, height, theme, isTop) {
+        ctx.fillStyle = "#48361c";
+        ctx.fillRect(width * 0.42, 0, width * 0.16, height);
+        ctx.fillStyle = theme.color;
+        const count = Math.ceil(height / 44);
+        for (let i = 0; i < count; i += 1) {
+          const offset = isTop ? height - i * 42 : i * 42;
+          ctx.beginPath();
+          ctx.moveTo(0, offset);
+          ctx.lineTo(width / 2, offset - 34);
+          ctx.lineTo(width, offset);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+
+      function drawGround() {
+        const grass = ctx.createLinearGradient(0, GROUND_Y - 12, 0, HEIGHT);
+        grass.addColorStop(0, "#567d45");
+        grass.addColorStop(1, "#273c21");
+        ctx.fillStyle = grass;
+        ctx.fillRect(0, GROUND_Y, WIDTH, HEIGHT - GROUND_Y);
+
+        ctx.fillStyle = "#88623b";
+        ctx.fillRect(0, GROUND_Y, WIDTH, 10);
+
+        ctx.strokeStyle = "rgba(244, 228, 177, 0.65)";
+        ctx.lineWidth = 4;
+        ctx.setLineDash([16, 12]);
+        ctx.beginPath();
+        ctx.moveTo(0, GROUND_Y + 28);
+        ctx.lineTo(WIDTH, GROUND_Y + 28);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      function drawPlayer() {
+        // Replace this rider drawing with a soul-driven version for the current character.
+        // Keep the silhouette simple and readable at small game scale.
+        ctx.save();
+        ctx.translate(state.player.x, state.player.y);
+        ctx.rotate(state.player.rotation);
+
+        ctx.fillStyle = "rgba(0,0,0,0.18)";
+        ctx.beginPath();
+        ctx.ellipse(-4, 24, 36, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#71461f";
+        ctx.fillRect(-8, 8, 76, 4);
+        ctx.fillStyle = "#c59c59";
+        ctx.fillRect(50, 7, 18, 6);
+
+        ctx.fillStyle = "#123829";
+        ctx.beginPath();
+        ctx.moveTo(-4, -1);
+        ctx.lineTo(18, 2);
+        ctx.lineTo(16, 22);
+        ctx.lineTo(-6, 19);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#0f261d";
+        ctx.beginPath();
+        ctx.moveTo(-2, 0);
+        ctx.lineTo(16, 3);
+        ctx.lineTo(11, 25);
+        ctx.lineTo(-5, 21);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#cfd6d3";
+        ctx.fillRect(3, 5, 3, 14);
+        ctx.fillRect(-2, 7, 12, 2);
+        ctx.fillRect(-1, 12, 10, 2);
+
+        ctx.strokeStyle = "#91a9a0";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-18, 10);
+        ctx.lineTo(-34, 4);
+        ctx.lineTo(-50, 9);
+        ctx.moveTo(-18, 12);
+        ctx.lineTo(-34, 16);
+        ctx.lineTo(-50, 13);
+        ctx.stroke();
+
+        ctx.fillStyle = "#edceb1";
+        ctx.beginPath();
+        ctx.arc(5, -8, 9, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#171717";
+        ctx.beginPath();
+        ctx.ellipse(5, -18, 10, 6, 0, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#1f1f1f";
+        ctx.fillRect(1, -20, 8, 8);
+        ctx.beginPath();
+        ctx.moveTo(-2, -18);
+        ctx.quadraticCurveTo(5, -27, 12, -18);
+        ctx.lineTo(11, -13);
+        ctx.lineTo(-1, -13);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#0d4d38";
+        ctx.fillRect(-4, -14, 18, 3);
+
+        ctx.fillStyle = "#d9b457";
+        ctx.fillRect(3, -17, 4, 4);
+        ctx.beginPath();
+        ctx.arc(5, -15, 5, Math.PI, Math.PI * 2);
+        ctx.strokeStyle = "#d9b457";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.strokeStyle = "#3f2b18";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(0, -7);
+        ctx.lineTo(3, -6.5);
+        ctx.moveTo(8, -7);
+        ctx.lineTo(11, -6.5);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(4.5, -4.5);
+        ctx.quadraticCurveTo(5.5, -3.2, 6.2, -4.8);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#846436";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(16, 6);
+        ctx.lineTo(28, 4);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#c59c59";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(28, 4);
+        ctx.lineTo(37, 8);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function drawParticles() {
+        for (const particle of state.particles) {
+          const alpha = Math.max(0, particle.life / particle.maxLife);
+          ctx.fillStyle = "hsla(" + particle.hue + ", 90%, 68%, " + alpha + ")";
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size * alpha, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function drawScoreInCanvas() {
+        if (state.phase === "running") {
+          ctx.fillStyle = "rgba(13, 20, 35, 0.2)";
+          const boxX = WIDTH / 2 - 70;
+          ctx.fillRect(boxX, 24, 140, 58);
+          ctx.strokeStyle = "rgba(255, 233, 176, 0.3)";
+          ctx.strokeRect(boxX, 24, 140, 58);
+          ctx.fillStyle = "#fff1b2";
+          ctx.font = "700 16px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText("SCORE", WIDTH / 2, 46);
+          ctx.font = "800 34px Georgia";
+          ctx.fillText(String(state.score), WIDTH / 2, 72);
+        }
+      }
+
+      function tick(timestamp) {
+        const dt = Math.min(0.032, (timestamp - state.lastTime) / 1000 || 0);
+        state.lastTime = timestamp;
+        update(dt);
+        draw();
+        requestAnimationFrame(tick);
+      }
+
+      function handleInput(event) {
+        if (event.type === "keydown") {
+          const valid = ["Space", "ArrowUp", "KeyW"];
+          if (!valid.includes(event.code)) {
+            return;
+          }
+          event.preventDefault();
+        }
+
+        if (state.phase === "over" || state.phase === "ready") {
+          startGame();
+        } else {
+          flap();
+        }
+      }
+
+      canvas.addEventListener("pointerdown", handleInput);
+      window.addEventListener("keydown", handleInput);
+
+      resetGame();
+      requestAnimationFrame(tick);
+    </script>
+  </body>
+</html>
