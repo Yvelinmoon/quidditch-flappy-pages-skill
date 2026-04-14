@@ -22,8 +22,8 @@ Before editing the page, read the current character profile from `soul.md`.
 
 Preferred lookup order:
 - A `soul.md` path explicitly mentioned in the current task or workflow.
-- `~/.openclaw/workspace/temp_soul.md`
 - A nearby `soul.md` in the active workspace if one exists.
+- The current runtime's active character profile file if one is exposed by the agent environment.
 
 Extract at minimum:
 - Character name
@@ -60,10 +60,10 @@ Character rendering guidance:
 
 ## Publish Flow
 
-Publish the final file as a standalone page under the local pages project when available.
+Publish the final file as a standalone page on the claw pages host for the active bot.
 
-Preferred local target:
-- `/Users/yves/neta-pages/public/`
+Required URL pattern:
+- `https://claw-{bot_name}-pages.talesofai.com/{page_name}.html`
 
 Suggested output filename:
 - `quidditch-flappy-{character_slug}.html`
@@ -71,9 +71,10 @@ Suggested output filename:
 If `bot_name` resolves to `openclaw` and the filename resolves to `quidditch-flappy-yongzheng.html`, the final public URL should be:
 - `https://claw-openclaw-pages.talesofai.com/quidditch-flappy-yongzheng.html`
 
-After copying the file into the pages project:
-- Use the existing local pages workflow to build or deploy if needed.
-- Return the direct standalone URL, not just a repo path.
+Deployment requirements:
+- Publish the page as a direct standalone HTML page, not as an embedded app route.
+- Use the runtime's available publish or pages deployment workflow.
+- Return the direct public URL, not an internal path or repo path.
 
 ## Output
 
