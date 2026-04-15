@@ -42,6 +42,7 @@ Requirements for the image step:
 - Keep the scene aligned with the Harry Potter world and the Quidditch pitch setting.
 - Use the appearance cues from `soul.md` so the character in the image matches the rider rendered in the page.
 - Capture and keep the final public image URL returned by `neta-creative`.
+- The generated image is for social preview metadata only, not for the playable scene background.
 
 The image URL is required for page metadata and social sharing.
 
@@ -86,6 +87,14 @@ Metadata requirements:
 - Use the generated `neta-creative` image URL for both `og:image` and `twitter:image`
 - Use the final public page URL for `og:url`
 
+Background protection rules:
+- Do not use the generated `neta-creative` image as the in-game background.
+- Do not replace `BG_IMAGE_URL`.
+- Do not modify `drawBackground()` to render the generated cover image.
+- Do not replace the fixed Quidditch gameplay background already used by the page.
+- The generated image may only appear in metadata fields such as `og:image` and `twitter:image`.
+- If the generated image is used as the gameplay background, treat that as an incorrect implementation and fix it before publishing.
+
 Character rendering guidance:
 - Prefer readable silhouette over fine detail.
 - Use 2 to 5 high-signal traits from `soul.md`, not every trait.
@@ -117,6 +126,11 @@ Recommended execution order:
 5. Rewrite the rider and metadata in `index.html`
 6. Publish the standalone HTML page
 7. Return the final page URL
+
+Final validation before publishing:
+- The Quidditch gameplay background is still the original fixed background.
+- `BG_IMAGE_URL` still points to the gameplay background asset, not the generated cover image.
+- The generated `neta-creative` image URL appears only in metadata fields.
 
 ## Output
 
