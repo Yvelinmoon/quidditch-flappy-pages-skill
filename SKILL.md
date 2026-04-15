@@ -47,12 +47,24 @@ The image URL is required for page metadata and social sharing.
 
 ## Bot Name
 
-You must resolve `bot_name` yourself. Use this order:
-- The current conversation context if the bot is addressed as `@name`
-- The current agent or bot identity in workspace context
-- The deployment hostname if one is already implied in nearby files or prior messages
+You must resolve `bot_name` from runtime evidence before publishing.
 
-Do not ask the user for `bot_name` unless all of the above fail.
+Hard rules:
+- Never use `openclaw` as a fallback, default, placeholder, or guess.
+- Never leave `{bot_name}` unreplaced.
+- Never invent a bot name.
+- Do not copy example values into the final result.
+- If runtime evidence is missing, stop and report that `bot_name` could not be resolved.
+
+Resolve `bot_name` in this order:
+- The current conversation context if the bot is explicitly addressed as `@name`
+- The active runtime bot identity
+- The active pages hostname or deployment hostname if already available
+
+Before returning the final URL, verify all of the following:
+- `{bot_name}` does not appear anywhere in the final URL or returned message
+- `openclaw` does not appear unless runtime evidence explicitly proves that the bot name is `openclaw`
+- the final URL is concrete and directly usable
 
 ## Page Edit Rules
 
@@ -89,9 +101,6 @@ Required URL pattern:
 
 Suggested output filename:
 - `quidditch-flappy-{character_slug}.html`
-
-If `bot_name` resolves to `openclaw` and the filename resolves to `quidditch-flappy-yongzheng.html`, the final public URL should be:
-- `https://claw-openclaw-pages.talesofai.com/quidditch-flappy-yongzheng.html`
 
 Deployment requirements:
 - Publish the page as a direct standalone HTML page, not as an embedded app route.
